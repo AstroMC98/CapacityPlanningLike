@@ -1,0 +1,115 @@
+[CityWorkHours.SG]
+internal = 8.3
+client = 8.2
+
+[CityWorkHours.TH]
+internal = 7.5
+client = 7.4
+
+[activityClass]
+productive = ['available Hours']
+billable = ['available Hours','onboarding Hours', 'coaching Hours', 'team_meeting Hours', 'wellness_support Hours', 'fb_training Hours']
+nonbillable = ['meal Hours', 'break Hours', 'non-fb-training Hours']
+leaves = ['annual_leave_value','toil_leave_value']
+
+[activityClass.Forecast]
+productive = ['available Hours']
+billable = ['available Hours','onboarding Hours', 'coaching Hours', 'team_meeting Hours', 'wellness_support Hours', 'fb_training Hours']
+nonbillable = ['Meal Hours', 'Break Hours', 'Non-Meta Training']
+leaves = ['annual_leave_value','toil_leave_value']
+
+[filePaths]
+activity_log = "data/Demo_Weekly_Activity_Breakdown.csv"
+#activity_log = "data/Demo_Production_Forecasting_Input.csv"
+start_end_lookup = "data/Demo_Date_Lookup.csv"
+
+[modelSettings.Leaves]
+Exog_columns = ['Excess FTE', "is_holiday"]
+
+[modelSettings.Leaves.TOIL]
+Endog_column = "toil_leave_value"
+Addtl_Exog_columns = ['TOIL Leaves Lag 1', 'TOIL Leaves Lag 2']
+
+[modelSettings.Leaves.TOIL_ARIMA]
+Endog_column = "toil_leave_value"
+Addtl_Exog_columns = []
+
+[modelSettings.Leaves.TOIL.Parameters]
+objective = "reg:squarederror"
+n_estimators = 1000
+max_depth = 50
+min_child_weight = 1
+learning_rate = 0.0125
+reg_lambda = 0.3
+reg_alpha = 0.3
+
+[modelSettings.Leaves.Annual]
+Endog_column = "annual_leave_value"
+Addtl_Exog_columns = ['Annual Leaves Lag 1', 'Annual Leaves Lag 2']
+
+[modelSettings.Leaves.Annual.Parameters]
+objective = "reg:squarederror"
+n_estimators = 1000
+max_depth = 10
+min_child_weight = 1
+learning_rate = 0.0125
+reg_lambda = 0.3
+reg_alpha = 0.3
+
+[modelSettings.Billable]
+Exog_columns = ['LeavePercentage', 'is_holiday']
+
+[modelSettings.Billable.ARIMA]
+Endog_column = "BillablePercentage"
+Addtl_Exog_columns = []
+
+[modelSettings.Billable.ARIMA.Parameters]
+p = 10
+d = 0
+q = 2
+trend = 'ct'
+freq = 'W-Fri'
+
+[modelSettings.Billable.NonARIMA]
+Endog_column = "BillablePercentage"
+Addtl_Exog_columns = ["BillablePercentage Lag 1", "BillablePercentage Lag 2"]
+
+[modelSettings.Billable.NonARIMA.Parameters]
+objective = "reg:squarederror"
+n_estimators = 1000
+max_depth = 50
+min_child_weight = 1
+learning_rate = 0.0125
+reg_lambda = 0.3
+reg_alpha = 0.3
+
+[chartSettings.Area]
+OOO_Target = 0.16
+Utilization_Target = 0.851
+
+[simulator]
+OOO_Target = 0.16
+WIO_Target = 0.15
+Utilization_Target = 0.851
+
+[simulator.activityTypes]
+productive = ['available']
+billable = ['available', 'onboarding', 'coaching', 'meeting', 'wellness', 'fbtraining']
+nonbillable = ['nonfbtraining', 'meal','breaks','leaves']
+
+[activityClass.Targets.SG]
+billable_types = ['available Hours','onboarding Hours', 'coaching Hours', 'team_meeting Hours', 'wellness_support Hours', 'fb_training Hours']
+billable_values = [0.866, 0.0, 0.030, 0.049, 0.018, 0.037]
+breaks_hours = 2.5
+meal_hours = 0
+nonfbtraining_hours = 0.5
+
+[activityClass.Targets.TH]
+billable_types = ['available Hours','onboarding Hours', 'coaching Hours', 'team_meeting Hours', 'wellness_support Hours', 'fb_training Hours']
+billable_values = [0.866, 0.0, 0.034, 0.054, 0.020, 0.041]
+break_hours = 2.5
+meal_hours = 0
+nonfbtraining_hours = 0.5
+
+[activityClass.MovingAverage]
+window_size = 12

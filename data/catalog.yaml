@@ -1,0 +1,22 @@
+data_catalog:
+  activity_log: 
+    filename : "Demo_Weekly_Activity_Breakdown.csv"
+    column_customizations:
+      to_datetime:
+        - Shift Date
+      get_date_column:
+        - Shift Date:
+            date_granularity: month
+            new_column: Month
+    filters:
+      negative:
+        - Year : 2023
+        - Month : 9
+  start_end_lookup:
+    filename : "Demo_Date_Lookup.csv"
+    column_customizations:
+      to_datetime:
+        - start
+        - end
+        - max_train_date
+      

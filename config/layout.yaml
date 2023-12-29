@@ -1,0 +1,14 @@
+webpage_design:
+  - authentication:
+      params:
+        - authconfig.credentials
+        - authconfig.cookie.name
+        - authconfig.cookie.key
+        - authconfig.cookie.expiry_days
+        - authconfig.preauthorized
+  - data_loader:
+      params:
+        - project_path
+  - information_widget:
+      - expander
+      - 
