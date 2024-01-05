@@ -26,7 +26,7 @@ class ForecastCapPlan:
         
         # Load in NonBillable Data
         self.nonbillable_data = nonbillable_data.loc[week]
-        self.LeaveAllocation = float(self.nonbillable_data['LeaveCount'])
+        self.LeaveAllocation = float(self.nonbillable_data['LeaveCount'] + self.nonbillable_data['Absenteeism Count']) 
         self.nonbillable_activity_breakdown()    
         
         # Run Aggergation
@@ -44,7 +44,7 @@ class ForecastCapPlan:
     def nonbillable_activity_breakdown(self):
         self.meal = self.nonbillable_data.get("Meal Hours",0)
         self.breaks = self.nonbillable_data.get("Break Hours", 0)
-        self.leaves = self.nonbillable_data.get("Leave Hours",0)
+        self.leaves = self.nonbillable_data.get("Leave Hours",0) + self.nonbillable_data.get("Planned Absenteeism Hours",0)
         self.nonfbtraining = self.nonbillable_data.get("Non-Meta Training", 0)
         
     def aggregated_activity_breakdown(self):
@@ -119,9 +119,11 @@ class ForecastCapPlan:
                     f"+{100*self.leaves/self.TotalHours:.2f}%", 
                     f"+{100*(self.meal + self.breaks)/self.TotalHours:.2f}%",  
                     "",
-                    f"{100*(self.meal + self.breaks + self.leaves)/self.TotalHours:.2f}%",
+                    #f"{100*(self.meal + self.breaks + self.leaves)/self.TotalHours:.2f}%",
+                    f"{100*self.OOO:.2f}%",
                     "",
-                    f"{100*(self.Billable-self.Productive)/self.TotalHours:.2f}%",
+                    #f"{100*(self.Billable-self.Productive)/self.TotalHours:.2f}%",
+                    f"{100*self.WIO:.2f}%",
                     ""
                 ],
                 customdata = np.stack(
@@ -143,9 +145,9 @@ class ForecastCapPlan:
                             100 * (self.meal + self.breaks)/self.TotalHours,
                             
                             100 * (self.TotalHours)/self.TotalHours,
-                            100 * (self.Nonbillable)/self.TotalHours,
-                            100 * (self.TotalHours - self.Nonbillable)/self.TotalHours,
-                            100 * ((self.Billable - self.Productive)/self.TotalHours),
+                            100 * self.OOO,
+                            100 * (1-self.OOO),
+                            100 * self.WIO,
                             100 * self.Productive/self.TotalHours
                         ],
                         [
@@ -196,7 +198,7 @@ class ForecastCapPlan:
                             "",
                             "",
                             
-                            f"(Annual Leaves + TOI Leaves) x {self.config['CityWorkHours'][self.City]['internal']}<br>",
+                            f"(Annual Leaves + TOI Leaves + Absenteeism Allocation) x {self.config['CityWorkHours'][self.City]['internal']}<br>",
                             "",
 
                             "Total Logged Hours<br>",

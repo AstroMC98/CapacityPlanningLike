@@ -213,6 +213,7 @@ if st.session_state['authentication_status']:
                 
                 
                 hc_inference['Excess FTE'] = hc_inference[actual_hc_col] - hc_inference['Required FTE']
+                st.caption("✏️ Editable Data")
                 hc_inference_edited = st.data_editor(hc_inference[['Shift Date',
                                                                     pred_hc_col,
                                                                    'Required FTE', "Excess FTE", 'is_holiday']].rename(columns={pred_hc_col : 'Active Unique Agents per Week',
@@ -341,16 +342,21 @@ if st.session_state['authentication_status']:
 
                         error_score = test_BaselineRegressor(AL_test, actual_AL_col, pred_AL_col)
                         st.warning(f"Root Mean Square Error of {AL_forecasting} Forecast: ±{error_score:.2f} Leaves", icon="⚠️")   
-                        
+                    
+                    st.caption("Current Data")
+                    st.dataframe(AL_inference[['Shift Date',
+                                                pred_hc_col,
+                                                'Required FTE',
+                                                'Excess FTE',
+                                                'is_holiday']].rename(columns={pred_hc_col : 'Active Unique Agents per Week',
+                                                                                'is_holiday' : '# of Holidays'}).set_index('Shift Date').T,
+                    )
+                    
+                    st.caption("✏️ Editable Data")
                     AL_inference_edited = st.data_editor(AL_inference[['Shift Date',
-                                                                       pred_hc_col,
-                                                                       'Required FTE',
-                                                                       'Excess FTE',
-                                                                       'is_holiday',
-                                                                       actual_AL_col]].rename(columns={pred_hc_col : 'Active Unique Agents per Week',
-                                                                                                       'is_holiday' : '# of Holidays',
-                                                                                                       actual_AL_col : 'Annual Leave Count'}).set_index('Shift Date').T,
+                                                                       actual_AL_col]].rename(columns={actual_AL_col : 'Annual Leave Count'}).set_index('Shift Date').T,
                                                 key = f"AL_edited")
+                    
                     
                     old_leave_values = list(forecasting_df[forecasting_df.data_source != 'inference'][actual_AL_col])
                     forecasting_df['Annual Leave Count'] = old_leave_values + list(AL_inference_edited.T['Annual Leave Count'])
@@ -469,14 +475,16 @@ if st.session_state['authentication_status']:
                             error_score = test_BaselineRegressor(TOIL_test, actual_TOIL_col, pred_TOIL_col)
                             st.warning(f"Root Mean Square Error of {TOIL_forecasting} Forecast: ±{error_score:.2f} Leaves", icon="⚠️")
                                 
+                        st.caption("Current Data")
+                        st.dataframe(TOIL_inference[['Shift Date',
+                                                    pred_hc_col,
+                                                    'Required FTE',
+                                                    'Excess FTE',
+                                                    'is_holiday']].rename(columns={actual_TOIL_col : 'TOI Leave Count'}).set_index('Shift Date').T,)
+    
+                        st.caption("✏️ Editable Data")
                         TOIL_inference_edited = st.data_editor(TOIL_inference[['Shift Date',
-                                                                        pred_hc_col,
-                                                                        'Required FTE',
-                                                                        'Excess FTE',
-                                                                        'is_holiday',
-                                                                        actual_TOIL_col]].rename(columns={pred_hc_col : 'Active Unique Agents per Week',
-                                                                                                        'is_holiday' : '# of Holidays',
-                                                                                                        actual_TOIL_col : 'TOI Leave Count'}).set_index('Shift Date').T,
+                                                                                actual_TOIL_col]].rename(columns={actual_TOIL_col : 'TOI Leave Count'}).set_index('Shift Date').T,
                                                     key = f"TOIL_edited")
                         
                         old_leave_values = list(forecasting_df[forecasting_df.data_source != 'inference'][actual_TOIL_col])
@@ -638,41 +646,59 @@ if st.session_state['authentication_status']:
                                 st.warning(f"Root Mean Square Error of {BP_forecasting} Forecast: ±{100*error_score:.2f}%", icon="⚠️")
                                 
                             st.caption("Editable Headcount Data (Resulting Annual Leave Forecasts)")
-                            BP_inference['NonBillablePercentage'] = 1 - (BP_inference['BillablePercentage'] + BP_inference['LeavePercentage'])
+                            BP_inference['NonBillablePercentage'] = 1 - (BP_inference['BillablePercentage'])
+
+                            st.caption("Current Data")
+                            st.dataframe(BP_inference[['Shift Date',
+                                                        pred_hc_col,
+                                                        'Required FTE',
+                                                        'Excess FTE',
+                                                        'is_holiday',
+                                                        'Annual Leave Count',
+                                                        'TOI Leave Count',
+                                                        'NonBillablePercentage']].rename(columns={
+                                                                                pred_hc_col : 'Active Unique Agents per Week',
+                                                                                'is_holiday' : '# of Holidays',
+                                                                                'LeavePercentage' : 'Leave Allocation Proportion (vs Total Hours)',
+                                                                                'NonBillablePercentage' : "Forecasted OOO Shrinkage"}).set_index('Shift Date').T,)
+                            
+                            st.caption("✏️ Editable Data")
                             BP_inference_edited = st.data_editor(BP_inference[['Shift Date',
-                                                                                pred_hc_col,
-                                                                                'Required FTE',
-                                                                                'Excess FTE',
-                                                                                'is_holiday',
-                                                                                'Annual Leave Count',
-                                                                                'TOI Leave Count',
-                                                                                'LeavePercentage',
-                                                                                actual_BP_col]].rename(columns={pred_hc_col : 'Active Unique Agents per Week',
-                                                                                                        'is_holiday' : '# of Holidays',
-                                                                                                        'LeavePercentage' : 'Leave Allocation Proportion (vs Total Hours)',
-                                                                                                        'BillablePercentage' : 'Billable Activity Allocation Proportion (vs Total Hours)'}).set_index('Shift Date').T,
-                                                                    key = f"BP_edited")
+                                                                                actual_BP_col]].rename(columns={'BillablePercentage' : 'Billable Activity Allocation Proportion (vs Total Hours)'}).set_index('Shift Date').T,
+                                        key = f"BP_edited")
                                     
+                                    
+                            log_data = BP_inference[['Shift Date',
+                                                    pred_hc_col,
+                                                    'Required FTE',
+                                                    'Excess FTE',
+                                                    'is_holiday',
+                                                    'Annual Leave Count',
+                                                    'TOI Leave Count',
+                                                    'LeavePercentage']].rename(columns={
+                                                                            pred_hc_col : 'Active Unique Agents per Week',
+                                                                            'is_holiday' : '# of Holidays',
+                                                                            'LeavePercentage' : 'Leave Allocation Proportion (vs Total Hours)'}).set_index('Shift Date')
+                                                    
                             BP_inference_edited = BP_inference_edited.T.rename(columns = {'Billable Activity Allocation Proportion (vs Total Hours)' : 'BillablePercentage'})
+                            log_data['BillablePercentage'] = list(BP_inference_edited.BillablePercentage)
                             old_bp_inference_values = list(forecasting_df[forecasting_df.data_source != 'inference'].BillablePercentage)
                             forecasting_df['BillablePercentage'] = old_bp_inference_values + list(BP_inference_edited.BillablePercentage)
                             forecasting_df['NonBillablePercentage'] = 1 - (forecasting_df['BillablePercentage'] + forecasting_df['LeavePercentage'])
-                            
                             submit_BP_forecasting = st.checkbox("Proceed to Next Step",
                                                             help = "Forward Edited Table to Next Step. Any further edits after inital submission requires retoggling of checkbox.",
                                                             key = 'BP')
-                            
+            
             if submit_hc_forecasting:
                 if submit_AL_forecasting:
                     if submit_TOI_forecasting:
                         if submit_BP_forecasting:
-                            with st.expander("Activity Allocation Configuration"):
+                            with st.expander("NonBillable Activity Allocation Configuration"):
                                                         #TOIL Leave Forecasting
                                 Distrib_Method= st.radio(
                                             "Activity Time Allocation Method",
-                                            ["Target Configuration", "Moving Average","Per Agent"],
+                                            ["Target Configuration","Per Agent"],
                                             captions = ["Use a Weight System",
-                                                        "Use 3-Months Moving Average",
                                                         "Allocate Exact Daily Activity Hours per Agent"],
                                                 key = f"Allocation Method",
                                                 horizontal= True)
@@ -680,92 +706,48 @@ if st.session_state['authentication_status']:
                                     inference_df = forecasting_df[forecasting_df.data_source == 'inference']
                                     DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
                                     
-                                    st.caption("Billable Activity Weights")
-                                    billable_alloc_df = pd.DataFrame(index = DISTRIBUTION_SETTINGS['billable_types'],
-                                                                    data = DISTRIBUTION_SETTINGS['billable_values'])
-                                    edited_billable_alloc = st.data_editor(billable_alloc_df.T).T
-                                    
-                                    bdf = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
+                                    st.caption("Current NonBillable Activity Allocation")
+                                    nbdf = pd.DataFrame(columns = ["Headcount","Total Hours", "Total NonBillable Hours", 'LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training Hours', 'Absenteeism Count'])
                                     for i,r in inference_df.iterrows():
                                         HC = r[pred_hc_col]
                                         TotHours = HC * settings['CityWorkHours'][city]['internal'] * 5
                                         TotBillable = TotHours * r['BillablePercentage']
-                                        activityHours_row = edited_billable_alloc.div(edited_billable_alloc.sum(axis=0), axis=1) * TotBillable
-                                        bdf = pd.concat([bdf, activityHours_row.T], axis = 0)   
-                                        
-                                    bdf.index = BP_inference_edited.index.tolist()                            
-                                    
-                                    st.caption("Resulting Billable Activity Allocation")
-                                    st.dataframe(bdf)
-                                    
-                                    st.caption("Resulting NonBillable Activity Allocation")
-                                    nbdf = pd.DataFrame(columns = ['LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training'])
-                                    for i,r in inference_df.iterrows():
-                                        HC = r[pred_hc_col]
-                                        TotHours = HC * settings['CityWorkHours'][city]['internal'] * 5
-                                        TotBillable = TotHours * r['BillablePercentage']
+                                        TotNonBillable = TotHours * (1 - r['BillablePercentage'])
                                         TotLeaveH = r['LeaveHours']
                                         TotLeaveC = r['Annual Leave Count'] + r['TOI Leave Count']
-                                        row_values = pd.DataFrame([TotLeaveC, TotLeaveH, 2.5 * HC, 0, 0.5 * HC], # (TotHours - TotBillable - TotLeaveH - (2.5*HC))
-                                                                index = ['LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training'])
+                                        row_values = pd.DataFrame([HC,TotHours, TotNonBillable, TotLeaveC, TotLeaveH, 2.5 * HC, 0, 0.5 * HC], # (TotHours - TotBillable - TotLeaveH - (2.5*HC))
+                                                                index = ["Headcount","Total Hours", "Total NonBillable Hours" ,'LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training Hours'])
                                         nbdf = pd.concat([nbdf, row_values.T], axis = 0, ignore_index = True)
                                     nbdf.index = BP_inference_edited.index.tolist()  
-                                    st.dataframe(nbdf)
-                                elif Distrib_Method == "Moving Average":
-                                    window_size = 12
-                                    testing_df = forecasting_df[forecasting_df.data_source != 'inference']
-                                    inference_df = forecasting_df[forecasting_df.data_source == 'inference'].reset_index(drop=True)
-                                    DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
+                                    nbdf['Planned Absenteeism Hours'] =  nbdf['Total NonBillable Hours'] - (nbdf['Leave Hours'] + nbdf['Break Hours'] + nbdf['Meal Hours'] + nbdf['Non-Meta Training Hours'])
+                                    nbdf['Absenteeism Count'] = np.round(nbdf['Planned Absenteeism Hours']/settings['CityWorkHours'][city]['internal'])
+                                    st.dataframe(nbdf[['Total Hours','Total NonBillable Hours',
+                                                      "LeaveCount", "Leave Hours","Absenteeism Count","Planned Absenteeism Hours",
+                                                      'Break Hours', 'Meal Hours', 'Non-Meta Training Hours']])
                                     
-                                    testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
-                                    testing_df.sort_values('Shift Date',ascending = False, inplace = True)
+                                    st.caption("✏️ Additional Leaves / Hours", help = "Input Additional or Reduction Values.")
+                                    addtl_nbdf = pd.DataFrame(columns = ['LeaveCount', 'Absenteeism Count','Non-Meta Training Hours'],
+                                                              index = nbdf.index).fillna(0.0)
+                                    addtl_nbdf_edited = st.data_editor(addtl_nbdf)
                                     
-                                    weight_df = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
-                                    bdf = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
+                                    nbdf_edited = nbdf.add(addtl_nbdf_edited, fill_value = 0)
+                                    nbdf_edited['Leave Hours'] = nbdf_edited['LeaveCount'] * settings['CityWorkHours'][city]['internal']
+                                    nbdf_edited['Planned Absenteeism Hours'] = nbdf_edited['Absenteeism Count'] * settings['CityWorkHours'][city]['internal']
+                                    nbdf_edited['Total NonBillable Hours'] = nbdf_edited[['Leave Hours','Planned Absenteeism Hours',
+                                                                                          'Break Hours','Meal Hours',
+                                                                                          'Non-Meta Training Hours']].sum(axis = 1)
+                                    nbdf_edited['NonBillable Percentage'] = nbdf_edited['Total NonBillable Hours']/nbdf_edited['Total Hours']
+                                    nbdf_edited['Billable Percentage'] = 1 - nbdf_edited['NonBillable Percentage']
+                                    nbdf_edited['Total Billable Hours'] = nbdf_edited['Total Hours'] * nbdf_edited['Billable Percentage']
+                                    st.caption("Resulting NonBillable Activities Allocation")
+                                    st.dataframe(nbdf_edited[['Total Hours','Total NonBillable Hours',
+                                                            "LeaveCount", "Leave Hours","Absenteeism Count","Planned Absenteeism Hours",
+                                                            'Break Hours', 'Meal Hours', 'Non-Meta Training Hours']])
                                     
-                                    for i,r in inference_df.iterrows():
-                                        if i != 0:
-                                            testing_df = pd.concat([pd.DataFrame(bdf.loc[i-1]).T, testing_df]).reset_index(drop=True)
-                                            testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
-                                        for data_column in bdf.columns:
-                                            data_window_col = testing_df.iloc[0 : window_size][data_column]
-                                            data_window_totcol = testing_df['total_billable_hours'].iloc[0 :  window_size]
-                                            col_weight = sum(data_window_col/data_window_totcol)/window_size
-                                            weight_df.loc[i,data_column] = col_weight
-                                            
-                                            HC = r[pred_hc_col]
-                                            TotHours = HC * settings['CityWorkHours'][city]['internal'] * 5
-                                            TotBillable = TotHours * r['BillablePercentage']
-                                            bdf.loc[i,data_column] = TotBillable*col_weight
-                                    bdf.index = BP_inference_edited.index.tolist()  
-                                    weight_df.index = BP_inference_edited.index.tolist()  
-                                    
-                                    testing_df = forecasting_df[forecasting_df.data_source != 'inference']
-                                    inference_df = forecasting_df[forecasting_df.data_source == 'inference'].reset_index(drop=True)
-                                    DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
-                                    testing_df.sort_values('Shift Date',ascending = False, inplace = True)
-                                    
-                                    nbdf = pd.DataFrame(columns = ['LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training'])
-                                    for i,r in inference_df.iterrows():
-                                        if i != 0:
-                                            testing_df = pd.concat([pd.DataFrame(nbdf.loc[i-1]).T, testing_df]).reset_index(drop=True)
-                                        TotLeaveH = r['LeaveHours']
-                                        TotLeaveC = r['Annual Leave Count'] + r['TOI Leave Count']
-                                        TotBreakH = (testing_df.iloc[0:window_size]['break Hours'].sum() + testing_df.iloc[0:window_size]['meal Hours'].sum())/window_size
-                                        TotNonMeta = testing_df.iloc[0:window_size]['non-fb-training Hours'].sum()/window_size
-                                        row_values = pd.DataFrame([TotLeaveC, TotLeaveH, TotBreakH, 0 , TotNonMeta], # (TotHours - TotBillable - TotLeaveH - (2.5*HC))
-                                                            index = ['LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training'])
-                                        nbdf = pd.concat([nbdf, row_values.T], axis = 0, ignore_index = True)
-                                    nbdf.index = BP_inference_edited.index.tolist()  
-                                    
-                                    st.caption("Billable Activity Weights")
-                                    st.dataframe(weight_df)        
-                                    
-                                    st.caption("Resulting Billable Allocation")
-                                    st.dataframe(bdf)
-                                    
-                                    st.caption("Resulting NonBillable Allocation")
-                                    st.dataframe(nbdf)
+                                    st.caption("Resulting Billable vs Nonbillable Activity Allocation")
+                                    st.dataframe(nbdf_edited[['Total Hours',
+                                                              'Billable Percentage', 'Total Billable Hours',
+                                                              'NonBillable Percentage', 'Total NonBillable Hours']])
                                     
                                 elif Distrib_Method == "Per Agent":
                                     window_size = 12
@@ -773,454 +755,655 @@ if st.session_state['authentication_status']:
                                     inference_df = forecasting_df[forecasting_df.data_source == 'inference'].reset_index(drop=True)
                                     DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
                                     
-                                    testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
-                                    testing_df.sort_values('Shift Date',ascending = False, inplace = True)
-                                    
-                                    weight_df = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
-                                    bdf = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
-                                    
-                                    # Default Value (Based on Moving Average 3)
+                                    st.caption("Current NonBillable Activity Allocation")
+                                    nbdf = pd.DataFrame(columns = ["Headcount","Total Hours", "Total NonBillable Hours", 'LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training Hours', 'Absenteeism Count'])
                                     for i,r in inference_df.iterrows():
-                                        if i != 0:
-                                            testing_df = pd.concat([pd.DataFrame(bdf.loc[i-1]).T, testing_df]).reset_index(drop=True)
-                                            testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
-                                        for data_column in bdf.columns:
-                                            data_window_col = testing_df.iloc[0 : window_size][data_column]
-                                            data_window_totcol = testing_df['total_billable_hours'].iloc[0 :  window_size]
-                                            col_weight = sum(data_window_col/data_window_totcol)/window_size
-                                            weight_df.loc[i,data_column] = col_weight
-                                            
-                                            HC = r[pred_hc_col]
-                                            TotHours = HC * settings['CityWorkHours'][city]['internal'] * 5
-                                            TotBillable = TotHours * r['BillablePercentage']
-                                            bdf.loc[i,data_column] = TotBillable*col_weight
-                                        bdf.loc[i,'ActiveCount'] = r[pred_hc_col]
-                                    bdf.index = BP_inference_edited.index.tolist()  
-                                    weight_df.index = BP_inference_edited.index.tolist()  
-                                    
-                                    # Editable Table
-                                    st.caption("Billable Activity Hours per Agent")
-                                    bdf_per_agent = bdf[bdf.columns.difference(['ActiveCount'])].div(bdf['ActiveCount']*5, axis = 0)
-                                    bdf_per_agent = st.data_editor(bdf_per_agent) 
-                                    
-                                    bdf_per_agent['ActiveCount'] =  bdf['ActiveCount'] 
-                                    
-                                    bdf =  bdf_per_agent[bdf_per_agent.columns.difference(['ActiveCount'])].multiply(bdf_per_agent['ActiveCount']*5, axis = 0)
-                                    
-                                    st.caption("Resulting Billable Allocation")
-                                    st.dataframe(bdf)
-                                    
-                                    testing_df = forecasting_df[forecasting_df.data_source != 'inference']
-                                    inference_df = forecasting_df[forecasting_df.data_source == 'inference'].reset_index(drop=True)
-                                    DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
-                                    testing_df.sort_values('Shift Date',ascending = False, inplace = True)
-                                    
-                                    nbdf = pd.DataFrame(columns = ['LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training'])
-                                    for i,r in inference_df.iterrows():
-                                        if i != 0:
-                                            testing_df = pd.concat([pd.DataFrame(nbdf.loc[i-1]).T, testing_df]).reset_index(drop=True)
+                                        HC = r[pred_hc_col]
+                                        TotHours = HC * settings['CityWorkHours'][city]['internal'] * 5
+                                        TotBillable = TotHours * r['BillablePercentage']
+                                        TotNonBillable = TotHours * (1 - r['BillablePercentage'])
                                         TotLeaveH = r['LeaveHours']
                                         TotLeaveC = r['Annual Leave Count'] + r['TOI Leave Count']
-                                        TotBreakH = (testing_df.iloc[0:window_size]['break Hours'].sum() + testing_df.iloc[0:window_size]['meal Hours'].sum())/window_size
-                                        TotNonMeta = testing_df.iloc[0:window_size]['non-fb-training Hours'].sum()/window_size
-                                        row_values = pd.DataFrame([TotLeaveC, TotLeaveH, TotBreakH, 0 , TotNonMeta], # (TotHours - TotBillable - TotLeaveH - (2.5*HC))
-                                                            index = ['LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training'])
+                                        row_values = pd.DataFrame([HC,TotHours, TotNonBillable, TotLeaveC, TotLeaveH, 2.5 * HC, 0, 0.5 * HC], # (TotHours - TotBillable - TotLeaveH - (2.5*HC))
+                                                                index = ["Headcount","Total Hours", "Total NonBillable Hours" ,'LeaveCount','Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training Hours'])
                                         nbdf = pd.concat([nbdf, row_values.T], axis = 0, ignore_index = True)
-                                        nbdf.loc[i,'ActiveCount'] = r[pred_hc_col]
-                                    nbdf.index = BP_inference_edited.index.tolist()     
+                                    nbdf.index = BP_inference_edited.index.tolist()  
+                                    nbdf['Planned Absenteeism Hours'] =  nbdf['Total NonBillable Hours'] - (nbdf['Leave Hours'] + nbdf['Break Hours'] + nbdf['Meal Hours'] + nbdf['Non-Meta Training Hours'])
+                                    nbdf['Absenteeism Count'] = np.round(nbdf['Planned Absenteeism Hours']/settings['CityWorkHours'][city]['internal'])
+                                    st.dataframe(nbdf[['Headcount','Total Hours','Total NonBillable Hours',
+                                                      "LeaveCount", "Leave Hours","Absenteeism Count","Planned Absenteeism Hours",
+                                                      'Break Hours', 'Meal Hours', 'Non-Meta Training Hours']])   
                                     
-                                    st.caption("Non-Billable Activity Hours or Days per Agent")
-                                    nbdf_per_agent = nbdf[nbdf.columns.difference(['ActiveCount','Leave Hours'])].div(nbdf['ActiveCount']*5, axis = 0)
-                                    nbdf_per_agent = st.data_editor(nbdf_per_agent) 
+                                    st.caption("✏️ Non-Billable Activity Hours or Days per Agent per Day")
+                                    nbdf_per_agent = nbdf.div(nbdf['Headcount']*5, axis = 0)
+                                    nbdf_per_agent = st.data_editor(nbdf_per_agent[['LeaveCount',
+                                                                                    'Absenteeism Count',
+                                                                                    'Break Hours',
+                                                                                    'Meal Hours',
+                                                                                    'Non-Meta Training Hours']]) 
                                     
-                                    nbdf_per_agent['ActiveCount'] =  nbdf['ActiveCount'] 
+                                    nbdf_per_agent['Headcount'] =  nbdf['Headcount'] 
                                     
-                                    nbdf =  nbdf_per_agent[nbdf_per_agent.columns.difference(['ActiveCount'])].multiply(nbdf_per_agent['ActiveCount']*5, axis = 0)
-                                    nbdf['Leave Hours'] = nbdf['LeaveCount'] * settings['CityWorkHours'][city]['internal']
-                                    nbdf = nbdf[['LeaveCount', 'Leave Hours', 'Break Hours', 'Meal Hours', 'Non-Meta Training']]
-                                    st.caption("Resulting Billable Allocation")
-                                    st.dataframe(nbdf)
                                     
-                                submit_capacity_plan = st.checkbox("Proceed to Data Visualization",
+                                    nbdf_edited = nbdf_per_agent[nbdf_per_agent.columns.difference(['Headcount'])].multiply(nbdf_per_agent['Headcount']*5, axis = 0)
+                                    nbdf_edited['Headcount'] = nbdf['Headcount']
+                                    nbdf_edited['Total Hours'] = nbdf['Total Hours']
+                                    nbdf_edited['Leave Hours'] = nbdf_edited['LeaveCount'] * settings['CityWorkHours'][city]['internal']
+                                    nbdf_edited['Planned Absenteeism Hours'] = nbdf_edited['Absenteeism Count'] * settings['CityWorkHours'][city]['internal']
+                                    nbdf_edited['Total NonBillable Hours'] = nbdf_edited[['Leave Hours','Planned Absenteeism Hours',
+                                                                            'Break Hours','Meal Hours',
+                                                                            'Non-Meta Training Hours']].sum(axis = 1)
+                                    nbdf_edited['NonBillable Percentage'] = nbdf_edited['Total NonBillable Hours']/nbdf_edited['Total Hours']
+                                    nbdf_edited['Billable Percentage'] = 1 - nbdf_edited['NonBillable Percentage']
+                                    nbdf_edited['Total Billable Hours'] = nbdf_edited['Total Hours'] * nbdf_edited['Billable Percentage']
+                                    st.caption("Resulting NonBillable Activities Allocation")
+                                    st.dataframe(nbdf_edited[['Total Hours','Total NonBillable Hours',
+                                                        "LeaveCount", "Leave Hours","Absenteeism Count","Planned Absenteeism Hours",
+                                                        'Break Hours', 'Meal Hours', 'Non-Meta Training Hours']])
+                                    
+                                    st.caption("Resulting Billable vs Nonbillable Activity Allocation")
+                                    st.dataframe(nbdf_edited[['Total Hours',
+                                                              'Billable Percentage', 'Total Billable Hours',
+                                                              'NonBillable Percentage', 'Total NonBillable Hours']])
+                                    
+                                submit_nonbillable_hours = st.checkbox("Proceed Next Step",
                                                             help = "Forward Edited Table to Next Step. Any further edits after inital submission requires retoggling of checkbox.",
                                                             key = 'DV')
+            
+                            
+            if submit_hc_forecasting:
+                if submit_AL_forecasting:
+                    if submit_TOI_forecasting:
+                        if submit_BP_forecasting:
+                            if submit_nonbillable_hours:
+
+                                with st.expander("Billable Activity Allocation Configuration"):
+                                                            #TOIL Leave Forecasting
+                                    Distrib_Method= st.radio(
+                                                "Activity Time Allocation Method",
+                                                ["Target Configuration", "Moving Average","Per Agent"],
+                                                captions = ["Use a Weight System",
+                                                            "Use 3-Months Moving Average",
+                                                            "Allocate Exact Daily Activity Hours per Agent"],
+                                                    key = f"Billable Allocation Method",
+                                                    horizontal= True)
+                                    if Distrib_Method == "Target Configuration":
+                                        inference_df = forecasting_df[forecasting_df.data_source == 'inference']
+                                        DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
+                                        
+                                        st.caption("✏️ Billable Activity Weights")
+                                        billable_alloc_df = pd.DataFrame(index = DISTRIBUTION_SETTINGS['billable_types'],
+                                                                        data = DISTRIBUTION_SETTINGS['billable_values'])
+                                        edited_billable_alloc = st.data_editor(billable_alloc_df.T).T
+                                        
+                                        bdf = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
+                                        for i,r in nbdf_edited.iterrows():
+                                            HC = r['Headcount']
+                                            TotBillable = r['Total Billable Hours']
+                                            activityHours_row = edited_billable_alloc.div(edited_billable_alloc.sum(axis=0), axis=1) * TotBillable
+                                            bdf = pd.concat([bdf, activityHours_row.T], axis = 0)   
+                                        
+                                        bdf.index = nbdf_edited.index.tolist()      
+                                        bdf['Total Billable Hours'] = nbdf_edited['Total Billable Hours']                      
+                                        
+                                        st.caption("Resulting Billable Activity Allocation")
+                                        st.dataframe(bdf)
+
+                                    elif Distrib_Method == "Moving Average":
+                                        window_size = 12
+                                        testing_df = forecasting_df[forecasting_df.data_source != 'inference']
+                                        inference_df = forecasting_df[forecasting_df.data_source == 'inference'].reset_index(drop=True)
+                                        DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
+                                        
+                                        testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
+                                        testing_df.sort_values('Shift Date',ascending = False, inplace = True)
+                                        
+                                        weight_df = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
+                                        bdf = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
+                                        
+                                        for i,r in nbdf_edited.reset_index().iterrows():
+                                            if i != 0:
+                                                testing_df = pd.concat([pd.DataFrame(bdf.loc[i-1]).T, testing_df]).reset_index(drop=True)
+                                                testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
+                                            for data_column in bdf.columns:
+                                                data_window_col = testing_df.iloc[0 : window_size][data_column]
+                                                data_window_totcol = testing_df['total_billable_hours'].iloc[0 :  window_size]
+                                                col_weight = sum(data_window_col/data_window_totcol)/window_size
+                                                weight_df.loc[i,data_column] = col_weight
+                                                
+                                                HC = r['Headcount']
+                                                TotBillable = r['Total Billable Hours']
+                                                bdf.loc[i,data_column] = TotBillable*col_weight
+                                        bdf.index = nbdf_edited.index.tolist()  
+                                        weight_df.index = nbdf_edited.index.tolist()  
+                                        
+                                        st.caption("Billable Activity Weights")
+                                        st.dataframe(weight_df)        
+                                        
+                                        st.caption("Resulting Billable Allocation")
+                                        bdf['Total Billable Hours'] = nbdf_edited['Total Billable Hours'] 
+                                        st.dataframe(bdf)
+                                        
+                                    elif Distrib_Method == "Per Agent":
+                                        window_size = 12
+                                        testing_df = forecasting_df[forecasting_df.data_source != 'inference']
+                                        inference_df = forecasting_df[forecasting_df.data_source == 'inference'].reset_index(drop=True)
+                                        DISTRIBUTION_SETTINGS = settings['activityClass']['Targets'][city]
+                                        
+                                        testing_df['total_billable_hours'] = testing_df[DISTRIBUTION_SETTINGS['billable_types']].sum(axis=1)
+                                        testing_df.sort_values('Shift Date',ascending = False, inplace = True)
+                                        
+                                        billable_alloc_df = pd.DataFrame(index = DISTRIBUTION_SETTINGS['billable_types'],
+                                                                        data = DISTRIBUTION_SETTINGS['billable_values'])
+                                        
+                                        bdf = pd.DataFrame(columns = DISTRIBUTION_SETTINGS['billable_types'])
+                                        for i,r in nbdf_edited.iterrows():
+                                            HC = r['Headcount']
+                                            TotBillable = r['Total Billable Hours']
+                                            activityHours_row = billable_alloc_df.div(billable_alloc_df.sum(axis=0), axis=1) * TotBillable
+                                            bdf = pd.concat([bdf, activityHours_row.T], axis = 0)   
+                                        bdf.index = nbdf_edited.index.tolist()      
+                                        bdf['Headcount'] = nbdf_edited['Headcount']
+                                        bdf['Total Billable Hours'] = nbdf_edited['Total Billable Hours']  
+                                        
+                                        # Editable Table
+                                        st.caption("✏️ Billable Activity Hours per Agent")
+                                        bdf_per_agent = bdf[bdf.columns.difference(['Headcount','Total Billable Hours'])].div(bdf['Headcount']*5, axis = 0)
+                                        bdf_per_agent = st.data_editor(bdf_per_agent) 
+                                        
+                                        bdf_per_agent['Headcount'] =  bdf['Headcount'] 
+                                        
+                                        bdf =  bdf_per_agent[bdf_per_agent.columns.difference(['Headcount'])].multiply(bdf_per_agent['Headcount']*5, axis = 0)
+                                        
+                                        st.caption("Resulting Billable Allocation")
+                                        bdf['Total Billable Hours'] = nbdf_edited['Total Billable Hours'] 
+                                        st.dataframe(bdf)
+                                        
+                                    submit_capacity_plan = st.checkbox("Proceed to Data Visualization",
+                                                                help = "Forward Edited Table to Next Step. Any further edits after inital submission requires retoggling of checkbox.",
+                                                                key = 'BDV')
                                 
             if submit_hc_forecasting:
                 if submit_AL_forecasting:
                     if submit_TOI_forecasting:
                         if submit_BP_forecasting:
-                            if submit_capacity_plan:
-                                st.header(f"Capacity Planning")
-                                st.caption(f"Total Changed wrt last {lookback_months} weeks")
-                                metric_col1, metric_col2, metric_col3 = st.columns(3)
-                                
-                                latest_data = forecasting_df[forecasting_df.data_source != 'inference'].sort_values('Shift Date', ascending = False)
-                                lookback_data = latest_data.iloc[:lookback_months]
-                                
-                                forecast_data = forecasting_df[forecasting_df.data_source == 'inference']
-                                
-                                metric_col1.metric(f"Avg. Unique Active Agents", 
-                                                   f"{np.mean(forecast_data[pred_hc_col].astype(float)):.2f}", 
-                                                   f"{np.mean(forecast_data[pred_hc_col].astype(float)) - np.mean(lookback_data['ActiveCount'].astype(float)):.2f}"
-                                                   )
-                                
-                                forecasted_avg_shrinkage = 100*np.mean((forecast_data['Annual Leave Count'].astype(float) + forecast_data['TOI Leave Count'].astype(float))/(5*forecast_data[pred_hc_col]))  
-                                historical_avg_shrinkage = 100*np.mean((lookback_data['Annual Leave Count'].astype(float) + lookback_data['TOI Leave Count'].astype(float))/(5*lookback_data[pred_hc_col]))
-                                metric_col2.metric("Leaves Shrinkage %",
-                                                   f"{forecasted_avg_shrinkage:.2f}%",
-                                                   f"{forecasted_avg_shrinkage - historical_avg_shrinkage:.2f}%")
-                                
-                                forecasted_leave_coverage = 100*np.mean(np.mean(forecast_data['Annual Leave Count'].astype(float) + forecast_data['TOI Leave Count'].astype(float))/(forecast_data['Excess FTE'].astype(float) * 5))
-                                lookback_leave_coverage = 100*np.mean(np.mean(lookback_data['Annual Leave Count'].astype(float) + lookback_data['TOI Leave Count'].astype(float))/(lookback_data['Excess FTE'].astype(float) * 5))
-                                metric_col3.metric("Excess FTE Leave Coverage", 
-                                                   f"{forecasted_leave_coverage:.2f}%",
-                                                   f"{forecasted_leave_coverage - lookback_leave_coverage:.2f}%",
-                                                   )
-                                with st.expander("Capacity Plan Data Summary", expanded=True):
-                                    st.caption("Basic Log Information")
-                                    st.dataframe(BP_inference_edited)
+                            if submit_nonbillable_hours:
+                                if submit_capacity_plan:
+                                    st.header(f"Capacity Planning")
+                                    st.caption(f"Total Changed wrt last {lookback_months} weeks")
+                                    metric_col1, metric_col2, metric_col3 = st.columns(3)
                                     
-                                    st.caption("Billable Activity Hours Allocation")
-                                    st.dataframe(bdf)
+                                    latest_data = forecasting_df[forecasting_df.data_source != 'inference'].sort_values('Shift Date', ascending = False)
+                                    lookback_data = latest_data.iloc[:lookback_months]
                                     
-                                    st.caption("NonBillable Activity Hours Allocation")
-                                    st.dataframe(nbdf)
+                                    forecast_data = forecasting_df[forecasting_df.data_source == 'inference']
                                     
-                                    finalize = st.checkbox('Finalize Data',
-                                                        help = 'Submit Data for Visualization',
-                                                        key = 'finalize')
-                                
-                                if finalize:
-                                
-                                    waterfall_tab, forecasting_tab = st.tabs(['📊 Waterfall Chart', "📉 Forecasting Plots"])
-                                    with waterfall_tab:
-                                        date_to_review = st.selectbox("Select Planning Week to Review",
-                                                                    options = BP_inference_edited.index.tolist(),
-                                                                    index=0)                              
-                                        generate_waterfall = st.checkbox("Plot Waterfall",
-                                                                        key="WaterFall")
+                                    metric_col1.metric(f"Avg. Unique Active Agents", 
+                                                    f"{np.mean(forecast_data[pred_hc_col].astype(float)):.2f}", 
+                                                    f"{np.mean(forecast_data[pred_hc_col].astype(float)) - np.mean(lookback_data['ActiveCount'].astype(float)):.2f}"
+                                                    )
+                                    
+                                    forecasted_avg_shrinkage = 100*np.mean((forecast_data['Annual Leave Count'].astype(float) + forecast_data['TOI Leave Count'].astype(float))/(5*forecast_data[pred_hc_col]))  
+                                    historical_avg_shrinkage = 100*np.mean((lookback_data['Annual Leave Count'].astype(float) + lookback_data['TOI Leave Count'].astype(float))/(5*lookback_data[pred_hc_col]))
+                                    metric_col2.metric("Leaves Shrinkage %",
+                                                    f"{forecasted_avg_shrinkage:.2f}%",
+                                                    f"{forecasted_avg_shrinkage - historical_avg_shrinkage:.2f}%")
+                                    
+                                    forecasted_leave_coverage = 100*np.mean(np.mean(forecast_data['Annual Leave Count'].astype(float) + forecast_data['TOI Leave Count'].astype(float))/(forecast_data['Excess FTE'].astype(float) * 5))
+                                    lookback_leave_coverage = 100*np.mean(np.mean(lookback_data['Annual Leave Count'].astype(float) + lookback_data['TOI Leave Count'].astype(float))/(lookback_data['Excess FTE'].astype(float) * 5))
+                                    metric_col3.metric("Excess FTE Leave Coverage", 
+                                                    f"{forecasted_leave_coverage:.2f}%",
+                                                    f"{forecasted_leave_coverage - lookback_leave_coverage:.2f}%",
+                                                    )
+                                    with st.expander("Capacity Plan Data Summary", expanded=True):
+                                        st.caption("Basic Log Information")
+                                        st.dataframe(log_data)
                                         
-                                        if generate_waterfall:
-                                            fcp_simulator = ForecastCapPlan(city, date_to_review, BP_inference_edited, bdf, nbdf, settings)
-                                            
-                                            URI_1 = fcp_simulator.UtilizationInternal 
-                                            URC_1 = fcp_simulator.UtilizationClient
-                                            WIO_1 = fcp_simulator.WIO
-                                            OOO_1 = fcp_simulator.OOO
-
-                                            col1,col2,col3,col4 = st.columns(4)
-                                            col1.metric("Utilization Rate (Internal)", f"{100*URI_1:.2f}%", help = "Actual Productive Hours Logged / Actual Billable Hours Logged")
-                                            col2.metric("Utilization Rate (Client)", f"{100*URC_1:.2f}%", help = f"Actual Productive Hours Logged / Target Billable Hours @ ({settings['simulator']['OOO_Target']*100}% OOO Shrinkage & {settings['simulator']['Utilization_Target']*100}% Utilization)")
-                                            col3.metric("WIO Shrinkage", f"{100*WIO_1:.2f}%", help = "(Actual Billable Hours Logged - Actual Productive Hours Logged) / Actual Billable Hours Logged")
-                                            col4.metric("OOO Shrinkage", f"{100*OOO_1:.2f}%", help = "Actual Nonbillable Hours Logged / Actual Total Hours Logged")
-
-                                            st.plotly_chart(fcp_simulator.generate_waterfall(), use_container_width = True)
-                                            
-                                    with forecasting_tab:
-                                        graph_space_col, graph_select_col = st.columns([4,2], gap = "medium")
+                                        st.caption("Billable Activity Hours Allocation")
+                                        st.dataframe(bdf)
                                         
-                                        with graph_select_col:
-                                            Plot_to_Viz = st.radio(
-                                                        "Select Graph to Visualize",
-                                                        ["FTE Allocation vs Internal Utilization",
-                                                        "FTE Allocation vs Client Utilization",
-                                                        "FTE Allocation vs OOO Shrinkage",
-                                                        "FTE Allocation vs WIO Shrinkage",
-                                                        "Leave Allocation vs Excess FTE Coverage"],
-                                                        captions = ["Use a Weight System",
-                                                                    "Use 3-Months Moving Average",
-                                                                    "Allocate Exact Daily Activity Hours per Agent"],
-                                                        key = f"P2V Method",
-                                                        horizontal= False)
+                                        st.caption("NonBillable Activity Hours Allocation")
+                                        st.dataframe(nbdf)
                                         
-                                        with graph_space_col:
-                                            noninference_df = forecasting_df[forecasting_df.data_source != 'inference']
+                                        finalize = st.checkbox('Finalize Data',
+                                                            help = 'Submit Data for Visualization',
+                                                            key = 'finalize')
+                                    
+                                    if finalize:
+                                    
+                                        waterfall_tab, forecasting_tab = st.tabs(['📊 Waterfall Chart', "📉 Forecasting Plots"])
+                                        with waterfall_tab:
+                                            date_to_review = st.selectbox("Select Planning Week to Review",
+                                                                        options = log_data.index.tolist(),
+                                                                        index=0)                              
+                                            generate_waterfall = st.checkbox("Plot Waterfall",
+                                                                            key="WaterFall")
                                             
-                                            # Non-Inference
-                                            util_noninference_df = noninference_df[["Shift Date",
-                                                                                    "ActiveCount",
-                                                                                    pred_hc_col,
-                                                                                    "Required FTE",
-                                                                                    "Excess FTE",
-                                                                                    "data_source",
-                                                                                    "Annual Leave Count",
-                                                                                    "TOI Leave Count",
-                                                                                    "LeaveHours",
-                                                                                    "TotalLogHours"] + 
-                                                                                    bdf.columns.tolist() +
-                                                                                    ['meal Hours', 'break Hours', 'non-fb-training Hours']
-                                            ]
-                                                                                    
-                                            util_noninference_df['Productive Hours'] = util_noninference_df['available Hours']
-                                            util_noninference_df['Billable Hours'] = util_noninference_df[bdf.columns.tolist()].sum(axis = 1)
-                                            util_noninference_df['NonBillable Hours'] = util_noninference_df[['LeaveHours'] +
-                                                                                                            ['meal Hours', 
-                                                                                                            'break Hours', 
-                                                                                                            'non-fb-training Hours']].sum(axis = 1)
-                                            util_noninference_df['Internal Utilization %'] = 100 * util_noninference_df['Productive Hours']/util_noninference_df['Billable Hours']
-                                            util_noninference_df['Client Utilization %'] = 100 * util_noninference_df['Productive Hours']/(util_noninference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-0.16) * .851)
-                                            util_noninference_df['WIO Shrinkage'] = 100 * ((util_noninference_df['Billable Hours'] - util_noninference_df['Productive Hours'])/(util_noninference_df['Billable Hours'])) 
-                                            util_noninference_df['OOO Shrinkage'] = 100 * (util_noninference_df['NonBillable Hours']/util_noninference_df['TotalLogHours'])
-                                            util_noninference_df['Excess FTE Coverage'] = 100 * ((util_noninference_df['Annual Leave Count'] + util_noninference_df['TOI Leave Count'])/(5 * (util_noninference_df['Excess FTE'])))
-                                            
-                                            util_noninference_df = util_noninference_df.iloc[-lookback_months:]
-                                            
-                                            
-                                            # Inference Data
-                                            util_inference_df = pd.concat([BP_inference_edited, bdf, nbdf],axis = 1)
-                                            
-                                            util_inference_df['Productive Hours'] = util_inference_df['available Hours']
-                                            util_inference_df['Billable Hours'] = util_inference_df[bdf.columns.tolist()].sum(axis = 1)
-                                            util_inference_df['NonBillable Hours'] = util_inference_df[['Leave Hours'] +
-                                                                                                        ['Meal Hours', 
-                                                                                                        'Break Hours', 
-                                                                                                        'Non-Meta Training']].sum(axis = 1)
-                                            util_inference_df['Internal Utilization %'] = 100 * util_inference_df['Productive Hours']/util_inference_df['Billable Hours']
-                                            util_inference_df['Client Utilization %'] = 100 * util_inference_df['Productive Hours']/(util_inference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-0.16) * .851)
-                                            util_inference_df['WIO Shrinkage'] = 100 * ((util_inference_df['Billable Hours'] - util_inference_df['Productive Hours'])/(util_inference_df['Billable Hours'])) 
-                                            util_inference_df['OOO Shrinkage'] = 100 * (util_inference_df['NonBillable Hours']/(util_inference_df['Billable Hours'] + util_inference_df['NonBillable Hours']))
-                                            util_inference_df['Excess FTE Coverage'] = 100 * ((util_inference_df['Annual Leave Count'] + util_inference_df['TOI Leave Count'])/(5 * (util_inference_df['Excess FTE'])))
-                                            
-                                            if Plot_to_Viz == "FTE Allocation vs Internal Utilization":
+                                            if generate_waterfall:
+                                                fcp_simulator = ForecastCapPlan(city, date_to_review, log_data, bdf, nbdf, settings)
                                                 
-                                                from plotly.subplots import make_subplots
+                                                URI_1 = fcp_simulator.UtilizationInternal 
+                                                URC_1 = fcp_simulator.UtilizationClient
+                                                WIO_1 = fcp_simulator.WIO
+                                                OOO_1 = fcp_simulator.OOO
 
-                                                # Create figure with secondary y-axis
-                                                fig = make_subplots(specs=[[{"secondary_y": True}]])
-                                                
-                                                fig.add_trace(go.Bar(name = "Target Headcount",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
-                                                
-                                                fig.add_trace(go.Bar(name = "Unique Active Agents",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
-                                                                    ))
-                                                
-                                                fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
-                                                fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
-                                                
-                                                fig.add_trace(go.Scatter(name = "Internal Utilization %",
-                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                        y = list(util_noninference_df["Internal Utilization %"]) + list(util_inference_df['Internal Utilization %'])),
-                                                                        secondary_y = True
-                                                            )
-                                                
-                                                fig.update_layout(legend=dict(
-                                                                    orientation="h",
-                                                                    yanchor="bottom",
-                                                                    y=-0.4,
-                                                                    xanchor="right",
-                                                                    x=1
-                                                                ))
-                                                
-                                                fig.update_yaxes(range=[80, 120], secondary_y=True)
-                                                fig.update_layout(
-                                                                barmode='group',
-                                                                bargroupgap=0.0,
-                                                                bargap = 0.30,
-                                                                yaxis_title="Number of Agents",
-                                                                font=dict(
-                                                                    size=10,
-                                                                )
-                                                )
-                                                                
-                                                fig.update_yaxes(
-                                                                title_text="Internal Utilization %", 
-                                                                secondary_y=True)
-                                                st.plotly_chart(fig)
-                                                
-                                            elif Plot_to_Viz == "FTE Allocation vs Client Utilization":
-                                                
-                                                from plotly.subplots import make_subplots
+                                                col1,col2,col3,col4 = st.columns(4)
+                                                col1.metric("Utilization Rate (Internal)", f"{100*URI_1:.2f}%", help = "Actual Productive Hours Logged / Actual Billable Hours Logged")
+                                                col2.metric("Utilization Rate (Client)", f"{100*URC_1:.2f}%", help = f"Actual Productive Hours Logged / Target Billable Hours @ ({settings['simulator']['OOO_Target']*100}% OOO Shrinkage & {settings['simulator']['Utilization_Target']*100}% Utilization)")
+                                                col3.metric("WIO Shrinkage", f"{100*WIO_1:.2f}%", help = "(Actual Billable Hours Logged - Actual Productive Hours Logged) / Actual Billable Hours Logged")
+                                                col4.metric("OOO Shrinkage", f"{100*OOO_1:.2f}%", help = "Actual Nonbillable Hours Logged / Actual Total Hours Logged")
 
-                                                # Create figure with secondary y-axis
-                                                fig = make_subplots(specs=[[{"secondary_y": True}]])
-                                                fig.add_trace(go.Bar(name = "Target Headcount",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
+                                                st.plotly_chart(fcp_simulator.generate_waterfall(), use_container_width = True)
                                                 
-                                                fig.add_trace(go.Bar(name = "Unique Active Agents",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
-                                                                    ))
+                                        with forecasting_tab:
+                                            graph_space_col, graph_select_col = st.columns([4,2], gap = "medium")
+                                            
+                                            with graph_select_col:
+                                                Plot_to_Viz = st.radio(
+                                                            "Select Graph to Visualize",
+                                                            ["FTE Allocation vs Internal Utilization",
+                                                            "FTE Allocation vs Client Utilization",
+                                                            "FTE Allocation vs OOO Shrinkage",
+                                                            "FTE Allocation vs WIO Shrinkage",
+                                                            "Billable Hours vs Target Billable Hours",
+                                                            "Productive Hours vs Target Productive Hours",
+                                                            "Leave Allocation vs Excess FTE Coverage"],
+                                                            captions = ["",
+                                                                        "",
+                                                                        "",
+                                                                        "",
+                                                                        "",
+                                                                        ""
+                                                                        ],
+                                                            key = f"P2V Method",
+                                                            horizontal= False)
+                                            
+                                            with graph_space_col:
+                                                noninference_df = forecasting_df[forecasting_df.data_source != 'inference']
                                                 
-                                                fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
-                                                fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                # Non-Inference
+                                                bdf_cols = bdf[bdf.columns.difference(["Total Billable Hours"])].columns.tolist()
+                                                util_noninference_df = noninference_df[["Shift Date",
+                                                                                        "ActiveCount",
+                                                                                        pred_hc_col,
+                                                                                        "Required FTE",
+                                                                                        "Excess FTE",
+                                                                                        "data_source",
+                                                                                        "Annual Leave Count",
+                                                                                        "TOI Leave Count",
+                                                                                        "LeaveHours",
+                                                                                        "TotalLogHours"] + 
+                                                                                        bdf_cols +
+                                                                                        ['meal Hours', 'break Hours', 'non-fb-training Hours']
+                                                ]
+                                                                                        
+                                                util_noninference_df['Productive Hours'] = util_noninference_df['available Hours']
+                                                util_noninference_df['Billable Hours'] = util_noninference_df[bdf_cols].sum(axis = 1)
+                                                util_noninference_df['NonBillable Hours'] = util_noninference_df[['LeaveHours'] +
+                                                                                                                ['meal Hours', 
+                                                                                                                'break Hours', 
+                                                                                                                'non-fb-training Hours']].sum(axis = 1)
+                                                util_noninference_df['Target Billable Hours'] = util_noninference_df['Required FTE'] * (settings['CityWorkHours'][city]['client'] * 5) * (1-settings['simulator']['OOO_Target']) * 0.851
+                                                util_noninference_df['Target Productive Hours'] = util_noninference_df['Target Billable Hours'] * 0.851
+                                                util_noninference_df['Internal Utilization %'] = 100 * util_noninference_df['Productive Hours']/util_noninference_df['Billable Hours']
+                                                util_noninference_df['Client Utilization %'] = 100 * util_noninference_df['Productive Hours']/(util_noninference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-0.16))
+                                                util_noninference_df['WIO Shrinkage'] = 100 * ((util_noninference_df['Billable Hours'] - util_noninference_df['Productive Hours'])/(util_noninference_df['Billable Hours'])) 
+                                                util_noninference_df['OOO Shrinkage'] = 100 * (util_noninference_df['NonBillable Hours']/util_noninference_df['TotalLogHours'])
+                                                util_noninference_df['Excess FTE Coverage'] = 100 * ((util_noninference_df['Annual Leave Count'] + util_noninference_df['TOI Leave Count'])/(5 * (util_noninference_df['Excess FTE'])))
                                                 
-                                                fig.add_trace(go.Scatter(name = "Client Utilization %",
-                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                        y = list(util_noninference_df["Client Utilization %"]) + list(util_inference_df['Client Utilization %'])),
-                                                                        secondary_y = True
-                                                            )
+                                                util_noninference_df = util_noninference_df.iloc[-lookback_months:]
                                                 
-                                                fig.update_layout(legend=dict(
-                                                                    orientation="h",
-                                                                    yanchor="bottom",
-                                                                    y=-0.25,
-                                                                    xanchor="right",
-                                                                    x=1
-                                                                ))
                                                 
-                                                fig.update_yaxes(range=[80,200], secondary_y=True)
-                                                fig.update_layout(
-                                                                yaxis_title="Number of Agents",
-                                                                font=dict(
-                                                                    size=10,
-                                                                )
-                                                )
-                                                                
-                                                fig.update_yaxes(
-                                                                title_text="Client Utilization %", 
-                                                                secondary_y=True)
-                                                st.plotly_chart(fig)
+                                                # Inference Data
+                                                util_inference_df = pd.concat([log_data, bdf, nbdf],axis = 1)
                                                 
-                                            elif Plot_to_Viz == "FTE Allocation vs OOO Shrinkage":
+                                                util_inference_df['Productive Hours'] = util_inference_df['available Hours']
+                                                util_inference_df['Billable Hours'] = util_inference_df[bdf_cols].sum(axis = 1)
+                                                util_inference_df['NonBillable Hours'] = util_inference_df[['Leave Hours',
+                                                                                                            'Planned Absenteeism Hours'] +
+                                                                                                            ['Meal Hours', 
+                                                                                                            'Break Hours', 
+                                                                                                            'Non-Meta Training Hours']].sum(axis = 1)
+                                                util_inference_df['Target Billable Hours'] = util_inference_df['Required FTE'] * (settings['CityWorkHours'][city]['client'] * 5) * (1-settings['simulator']['OOO_Target'])
+                                                util_inference_df['Target Productive Hours'] = util_inference_df['Target Billable Hours'] * 0.851
+                                                util_inference_df['Internal Utilization %'] = 100 * util_inference_df['Productive Hours']/util_inference_df['Billable Hours']
+                                                util_inference_df['Client Utilization %'] = 100 * util_inference_df['Productive Hours']/(util_inference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-0.16))
+                                                util_inference_df['WIO Shrinkage'] = 100 * ((util_inference_df['Billable Hours'] - util_inference_df['Productive Hours'])/(util_inference_df['Billable Hours'])) 
+                                                util_inference_df['OOO Shrinkage'] = 100 * (util_inference_df['NonBillable Hours']/(util_inference_df['Billable Hours'] + util_inference_df['NonBillable Hours']))
+                                                util_inference_df['Excess FTE Coverage'] = 100 * ((util_inference_df['Annual Leave Count'] + util_inference_df['TOI Leave Count'] + util_inference_df['Absenteeism Count'])/(5 * (util_inference_df['Excess FTE'])))
                                                 
-                                                from plotly.subplots import make_subplots
+                                                if Plot_to_Viz == "FTE Allocation vs Internal Utilization":
+                                                    
+                                                    from plotly.subplots import make_subplots
 
-                                                # Create figure with secondary y-axis
-                                                fig = make_subplots(specs=[[{"secondary_y": True}]])
-                                                fig.add_trace(go.Bar(name = "Target Headcount",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
-                                                
-                                                fig.add_trace(go.Bar(name = "Unique Active Agents",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
-                                                                    ))
-                                                
-                                                fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
-                                                fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
-                                                
-                                                fig.add_trace(go.Scatter(name = "OOO Shrinkage",
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Target Headcount",
                                                                         x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                        y = list(util_noninference_df["OOO Shrinkage"]) + list(util_inference_df['OOO Shrinkage'])),
-                                                                        secondary_y = True
-                                                            )
-                                                
-                                                fig.update_layout(legend=dict(
-                                                                    orientation="h",
-                                                                    yanchor="bottom",
-                                                                    y=-0.25,
-                                                                    xanchor="right",
-                                                                    x=1
-                                                                ))
-                                                
-                                                fig.update_yaxes(range=[0,50], secondary_y=True)
-                                                
-                                                fig.update_layout(
-                                                                yaxis_title="Number of Agents",
-                                                                font=dict(
-                                                                    size=10,
+                                                                        y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Unique Active Agents",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "Internal Utilization %",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["Internal Utilization %"]) + list(util_inference_df['Internal Utilization %'])),
+                                                                            secondary_y = True
                                                                 )
-                                                )
-                                                                
-                                                fig.update_yaxes(
-                                                                title_text="% OOO Shrinkage", 
-                                                                secondary_y=True)
-                                                st.plotly_chart(fig)
-                                                
-                                            elif Plot_to_Viz == "FTE Allocation vs WIO Shrinkage":
-                                                
-                                                from plotly.subplots import make_subplots
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.4,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[80, 120], secondary_y=True)
+                                                    fig.update_layout(
+                                                                    barmode='group',
+                                                                    bargroupgap=0.0,
+                                                                    bargap = 0.30,
+                                                                    yaxis_title="Number of Agents",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="Internal Utilization %", 
+                                                                    secondary_y=True)
+                                                    st.plotly_chart(fig)
+                                                    
+                                                elif Plot_to_Viz == "FTE Allocation vs Client Utilization":
+                                                    
+                                                    from plotly.subplots import make_subplots
 
-                                                # Create figure with secondary y-axis
-                                                fig = make_subplots(specs=[[{"secondary_y": True}]])
-                                                fig.add_trace(go.Bar(name = "Target Headcount",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
-                                                
-                                                fig.add_trace(go.Bar(name = "Unique Active Agents",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
-                                                                    ))
-                                                
-                                                fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
-                                                fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
-                                                
-                                                fig.add_trace(go.Scatter(name = "WIO Shrinkage",
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    fig.add_trace(go.Bar(name = "Target Headcount",
                                                                         x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                        y = list(util_noninference_df["WIO Shrinkage"]) + list(util_inference_df['WIO Shrinkage'])),
-                                                                        secondary_y = True
-                                                            )
-                                                
-                                                fig.update_layout(legend=dict(
-                                                                    orientation="h",
-                                                                    yanchor="bottom",
-                                                                    y=-0.25,
-                                                                    xanchor="right",
-                                                                    x=1
-                                                                ))
-                                                
-                                                fig.update_yaxes(range=[0,50], secondary_y=True)
-                                                
-                                                fig.update_layout(
-                                                                yaxis_title="Number of Agents",
-                                                                font=dict(
-                                                                    size=10,
+                                                                        y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Unique Active Agents",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "Client Utilization %",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["Client Utilization %"]) + list(util_inference_df['Client Utilization %'])),
+                                                                            secondary_y = True
                                                                 )
-                                                )
-                                                                
-                                                fig.update_yaxes(
-                                                                title_text="% WIO Shrinkage", 
-                                                                secondary_y=True)
-                                                
-                                            
-                                                st.plotly_chart(fig)
-                                                
-                                            elif Plot_to_Viz == "Leave Allocation vs Excess FTE Coverage":
-                                                
-                                                from plotly.subplots import make_subplots
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.25,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[80,200], secondary_y=True)
+                                                    fig.update_layout(
+                                                                    yaxis_title="Number of Agents",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="Client Utilization %", 
+                                                                    secondary_y=True)
+                                                    st.plotly_chart(fig)
+                                                    
+                                                elif Plot_to_Viz == "Billable Hours vs Target Billable Hours":
+                                                    
+                                                    from plotly.subplots import make_subplots
 
-                                                # Create figure with secondary y-axis
-                                                fig = make_subplots(specs=[[{"secondary_y": True}]])
-                                                fig.add_trace(go.Bar(name = "Excess FTE vs Unique Agents",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = 5*(list(util_noninference_df["Excess FTE"]) +list(util_inference_df['Excess FTE']))))
-                                                
-                                                fig.add_trace(go.Bar(name = "Leaves Allocation",
-                                                                    x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                    y = list(util_noninference_df[['Annual Leave Count','TOI Leave Count']].sum(axis = 1)) + list(util_inference_df[['Annual Leave Count','TOI Leave Count']].sum(axis = 1))
-                                                                    ))
-                                                
-                                                fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
-                                                fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
-                                                
-                                                fig.add_trace(go.Scatter(name = "Excess FTE Coverage %",
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    fig.add_trace(go.Bar(name = "Billable Hours",
                                                                         x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
-                                                                        y = list(util_noninference_df["Excess FTE Coverage"]) + list(util_inference_df['Excess FTE Coverage'])),
-                                                                        secondary_y = True
-                                                            )
-                                                
-                                                fig.update_layout(legend=dict(
-                                                                    orientation="h",
-                                                                    yanchor="bottom",
-                                                                    y=-0.25,
-                                                                    xanchor="right",
-                                                                    x=1
-                                                                ))
-                                                
-                                                fig.update_yaxes(range=[0,
-                                                                        max(util_noninference_df['Excess FTE Coverage']) + 10],
-                                                                secondary_y=True)
-                                                
-                                                fig.update_layout(
-                                                                yaxis_title="Number of Agents",
-                                                                font=dict(
-                                                                    size=10,
+                                                                        y = list(util_noninference_df["Billable Hours"]) +list(util_inference_df['Billable Hours'])))
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Target Billable Hours",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df['Target Billable Hours']) + list(util_inference_df['Target Billable Hours'])
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "Client Utilization %",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["Client Utilization %"]) + list(util_inference_df['Client Utilization %'])),
+                                                                            secondary_y = True
                                                                 )
-                                                )
-                                                                
-                                                fig.update_yaxes(
-                                                                title_text="% Excess FTE Accounted For by Leaves", 
-                                                                secondary_y=True)
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.25,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[80,200], secondary_y=True)
+                                                    fig.update_layout(
+                                                                    yaxis_title="Billable Hours",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="Client Utilization %", 
+                                                                    secondary_y=True)
+                                                    st.plotly_chart(fig)
+                                                    
+                                                elif Plot_to_Viz == "Productive Hours vs Target Productive Hours":
+                                                    
+                                                    from plotly.subplots import make_subplots
+
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    fig.add_trace(go.Bar(name = "Productive Hours",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df["Productive Hours"]) +list(util_inference_df['Productive Hours'])))
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Target Productive Hours",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df['Target Productive Hours']) + list(util_inference_df['Target Productive Hours'])
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "Client Utilization %",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["Client Utilization %"]) + list(util_inference_df['Client Utilization %'])),
+                                                                            secondary_y = True
+                                                                )
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.25,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[80,200], secondary_y=True)
+                                                    fig.update_layout(
+                                                                    yaxis_title="Productive Hours",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="Client Utilization %", 
+                                                                    secondary_y=True)
+                                                    st.plotly_chart(fig)
+                                                    
+                                                elif Plot_to_Viz == "FTE Allocation vs OOO Shrinkage":
+                                                    
+                                                    from plotly.subplots import make_subplots
+
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    fig.add_trace(go.Bar(name = "Target Headcount",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Unique Active Agents",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "OOO Shrinkage",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["OOO Shrinkage"]) + list(util_inference_df['OOO Shrinkage'])),
+                                                                            secondary_y = True
+                                                                )
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.25,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[0,50], secondary_y=True)
+                                                    
+                                                    fig.update_layout(
+                                                                    yaxis_title="Number of Agents",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="% OOO Shrinkage", 
+                                                                    secondary_y=True)
+                                                    st.plotly_chart(fig)
+                                                    
+                                                elif Plot_to_Viz == "FTE Allocation vs WIO Shrinkage":
+                                                    
+                                                    from plotly.subplots import make_subplots
+
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    fig.add_trace(go.Bar(name = "Target Headcount",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df["Required FTE"]) +list(util_inference_df['Required FTE'])))
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Unique Active Agents",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df['ActiveCount']) + list(util_inference_df['Active Unique Agents per Week'])
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "WIO Shrinkage",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["WIO Shrinkage"]) + list(util_inference_df['WIO Shrinkage'])),
+                                                                            secondary_y = True
+                                                                )
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.25,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[0,50], secondary_y=True)
+                                                    
+                                                    fig.update_layout(
+                                                                    yaxis_title="Number of Agents",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="% WIO Shrinkage", 
+                                                                    secondary_y=True)
+                                                    
+                                                
+                                                    st.plotly_chart(fig)
+                                                    
+                                                elif Plot_to_Viz == "Leave Allocation vs Excess FTE Coverage":
+                                                    
+                                                    from plotly.subplots import make_subplots
+
+                                                    # Create figure with secondary y-axis
+                                                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                                                    fig.add_trace(go.Bar(name = "Excess FTE vs Unique Agents (Week)",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = (list(5*util_noninference_df["Excess FTE"]) +list(5*util_inference_df['Excess FTE']))
+                                                                        )
+                                                                  )
+                                                    
+                                                    fig.add_trace(go.Bar(name = "Leaves Allocation",
+                                                                        x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                        y = list(util_noninference_df[['Annual Leave Count','TOI Leave Count']].sum(axis = 1)) + list(util_inference_df[['Annual Leave Count','TOI Leave Count','Absenteeism Count']].sum(axis = 1))
+                                                                        ))
+                                                    
+                                                    fig.data[0].marker.color = tuple(['#0081FB']*(len(util_noninference_df) + len(util_inference_df)))
+                                                    fig.data[1].marker.color = tuple(['#FDB51B']*len(util_noninference_df) + ['#FFECC1']*len(util_inference_df))
+                                                    
+                                                    fig.add_trace(go.Scatter(name = "Excess FTE Coverage %",
+                                                                            x = list(util_noninference_df['Shift Date']) + list(util_inference_df.index),
+                                                                            y = list(util_noninference_df["Excess FTE Coverage"]) + list(util_inference_df['Excess FTE Coverage'])),
+                                                                            secondary_y = True
+                                                                )
+                                                    
+                                                    fig.update_layout(legend=dict(
+                                                                        orientation="h",
+                                                                        yanchor="bottom",
+                                                                        y=-0.25,
+                                                                        xanchor="right",
+                                                                        x=1
+                                                                    ))
+                                                    
+                                                    fig.update_yaxes(range=[0,
+                                                                            max(util_inference_df['Excess FTE Coverage']) + 10],
+                                                                    secondary_y=True)
+                                                    
+                                                    fig.update_layout(
+                                                                    yaxis_title="Number of Agents",
+                                                                    font=dict(
+                                                                        size=10,
+                                                                    )
+                                                    )
+                                                                    
+                                                    fig.update_yaxes(
+                                                                    title_text="% Excess FTE Accounted For by Leaves", 
+                                                                    secondary_y=True)
+                                                
+                                                    st.plotly_chart(fig)
                                             
-                                                st.plotly_chart(fig)
-                                        
-                                            
-                                            
-               
+                                                
+                                                
+                
             
         with historical_data_tab:
             historical_date = st.selectbox("Select an Initial Historical Date to Load",
@@ -1308,14 +1491,7 @@ if st.session_state['authentication_status']:
             st.plotly_chart(simulator.generate_waterfall(), use_container_width = True)
         
         
-        # metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = st.columns(5)
-        # latest_data = df_training.iloc[-1]
-        # metric_col1.metric("Headcount", latest_data['ActiveCount'])
-        # metric_col2.metric("Hiring", latest_data['NHires'])
-        # metric_col3.metric("Attrition", latest_data['NFires'])
-        # metric_col4.metric("Shrinkage", '-')
-        # metric_col5.metric("FTE Coverage", '-')
-        
+
         
         
     
