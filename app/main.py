@@ -1,6 +1,7 @@
 # Import Libraries
 import toml
 import yaml
+import math
 import datetime
 import holidays
 import numpy as np
@@ -120,8 +121,38 @@ if st.session_state['authentication_status']:
         
         lob_col1, lob_col2= st.columns(2)
         
-        # lob_col1.metric(label="No. of Weeks Logged", value=len(filtered_data))
-        # lob_col2.metric(label='Avg HC (3 Month MA)', value="{:.2f}".format(filtered_data.iloc[-12:]['ActiveCount'].mean()))
+        with st.expander("Metric Targets", expanded = False):
+            Util_Target = st.number_input("Utilization Target", 
+                                          min_value = 0.0,
+                                          max_value = 1.0,
+                                          step = 0.001,
+                                          format ="%1.3f",
+                                          value=settings['simulator']['Targets']['Utilization'])
+            Util_Client_Target = st.number_input("Client Utilization Target", 
+                                          min_value = 0.0,
+                                          max_value = 1.0,
+                                          step = 0.001,
+                                          format ="%1.3f",
+                                          value=settings['simulator']['Targets']['Utilization_Client'])
+            OOO_Target = st.number_input("Out-of-Office Shrinkage Target", 
+                                          min_value = 0.0,
+                                          max_value = 1.0,
+                                          step = 0.001,
+                                          format ="%1.3f",
+                                         value=settings['simulator']['Targets']['OOO'])
+            WIO_Target = st.number_input("Within-Office Shrinkage Target", 
+                                          min_value = 0.0,
+                                          max_value = 1.0,
+                                          step = 0.001,
+                                          format ="%1.3f",
+                                         value=settings['simulator']['Targets']['WIO'])
+            
+            settings['simulator']['Targets']['Utilization'] = Util_Target
+            settings['simulator']['Targets']['Utilization_Client'] = Util_Client_Target
+            settings['simulator']['Targets']['OOO'] = OOO_Target
+            settings['simulator']['Targets']['WIO'] = WIO_Target
+            
+            
         
     # Set Default Border Training Date - TO-DO : Make it config-based
     border_training_date = datetime.datetime(2023, 7, 1)
@@ -987,14 +1018,78 @@ if st.session_state['authentication_status']:
                                                 WIO_1 = fcp_simulator.WIO
                                                 OOO_1 = fcp_simulator.OOO
 
+                                                st.caption("Metrics vs Targets")
                                                 col1,col2,col3,col4 = st.columns(4)
-                                                col1.metric("Utilization Rate (Internal)", f"{100*URI_1:.2f}%", help = "Actual Productive Hours Logged / Actual Billable Hours Logged")
-                                                col2.metric("Utilization Rate (Client)", f"{100*URC_1:.2f}%", help = f"Actual Productive Hours Logged / Target Billable Hours @ ({settings['simulator']['OOO_Target']*100}% OOO Shrinkage & {settings['simulator']['Utilization_Target']*100}% Utilization)")
-                                                col3.metric("WIO Shrinkage", f"{100*WIO_1:.2f}%", help = "(Actual Billable Hours Logged - Actual Productive Hours Logged) / Actual Billable Hours Logged")
-                                                col4.metric("OOO Shrinkage", f"{100*OOO_1:.2f}%", help = "Actual Nonbillable Hours Logged / Actual Total Hours Logged")
+
+                                                col1.metric("Utilization Rate (Internal)", f"{100*URI_1:.2f}%", 
+                                                            help = "Projected Productive Hours / Projected Billable Hours",
+                                                            delta = f"{100*(settings['simulator']['Targets']['Utilization'] - URI_1):.2f}%")
+                                                col2.metric("Utilization Rate (Client)", f"{100*URC_1:.2f}%", 
+                                                            help = f"Projected Productive Hours / Target Billable Hours @ ({settings['simulator']['Targets']['OOO']*100}% OOO Shrinkage & {settings['simulator']['Targets']['Utilization']*100}% Utilization)",
+                                                            delta = f"{100*(settings['simulator']['Targets']['Utilization_Client'] - URC_1):.2f}%")
+                                                col3.metric("WIO Shrinkage", f"{100*WIO_1:.2f}%", 
+                                                            help = "(Projected Billable Hours - Projected Productive Hours Logged) / Projected Billable Hours",
+                                                            delta = f"{100*(settings['simulator']['Targets']['WIO'] - WIO_1):.2f}%")
+                                                col4.metric("OOO Shrinkage", f"{100*OOO_1:.2f}%", 
+                                                            help = "Projected Nonbillable Hours / Projected Total Hours",
+                                                            delta = f"{100*(settings['simulator']['Targets']['OOO'] - OOO_1):.2f}%")
 
                                                 st.plotly_chart(fcp_simulator.generate_waterfall(), use_container_width = True)
                                                 
+                                                with st.expander("Recommendations", expanded = True):
+                                                    # Initialize actions lists for below and above scenarios
+                                                    actions_below = []
+                                                    actions_above = []
+                                                    
+                                                    # Check scenarios and store actions accordingly
+                                                    if URI_1 < settings['simulator']['Targets']['Utilization']:
+                                                        actions_below.append("Internal Utilization Rate is below target. Adjust Activity Allocation to optimize resource utilization.")
+                                                        actions_below.append("Internal Utilization Rate is below target. Allocating more hours towards other non-project activities may enhance employee satisfaction and performance.")
+                                                    else:
+                                                        actions_above.append("Internal Utilization Rate is either above or equal to target. Consider revisiting project allocations to maintain employee engagement while meeting targets.")
+
+                                                    if URC_1 < settings['simulator']['Targets']['Utilization_Client']:
+                                                        actions_below.extend([
+                                                            "Client Utilization Rate is below target. Increase Hour Allocation Towards Productive Hours to meet client demands.",
+                                                            "Client Utilization Rate is below target. Consider Increasing Headcount to manage workload effectively.",
+                                                            "Client Utilization Rate is below target. Encourage or Enforce Reduction in Leave Count to ensure sufficient workforce."
+                                                        ])
+                                                    else:
+                                                        actions_above.extend([
+                                                            "Client Utilization Rate is either above or equal to target. Slightly adjust hour allocation towards non-client-related tasks to diversify employee experience.",
+                                                            "Client Utilization Rate is either above or equal to target. Evaluate current workforce capacity for future scaling rather than immediate additions.",
+                                                            "Client Utilization Rate is either above or equal to target. Encourage a balanced approach to leave counts (potential increase in leave count) for employee well-being."
+                                                        ])
+                                                        actions_above.append("Client Utilization Rate is either above or equal to target. Current client workload is manageable, consider diversifying tasks for skill enhancement.")
+
+                                                    if WIO_1 > settings['simulator']['Targets']['WIO']:
+                                                        actions_above.append("WIO Shrinkage is above target. Consider optimizing schedules to reduce within-office non-productive hours.")
+                                                    else:
+                                                        actions_below.append("WIO Shrinkage is either below or equal to target. Current allocation seems balanced.")
+                                                        actions_below.append("WIO Shrinkage is either below or equal to target. Adjust Activity Allocation towards Non-Productive Billable Hours to maximize workforce allocation.")
+                                                       
+                                                        
+                                                    if OOO_1 < settings['simulator']['Targets']['OOO']:
+                                                        actions_above.extend([
+                                                            "OOO Shrinkage is above target. Consider reviewing leave and training allocations for better balance.",
+                                                        ])
+                                                        
+                                                    else:
+                                                        actions_below.append("OOO Shrinkage is below target. Current allocations seem sufficient.")
+                                                        actions_below.extend([
+                                                            "OOO Shrinkage is either below equal to target. Increase Leave/Absenteeism Allocation to accommodate absences.",
+                                                            "OOO Shrinkage is either below equal to target. Increase Allocation Towards Non-Meta Training for skill enhancement."
+                                                        ])
+                                                    
+                                                    # Display actions for below and above scenarios
+                                                    st.warning("⚠️ Recommended Actions for Below Target Scenarios:")
+                                                    for action in actions_below:
+                                                        st.write(f"- {action}")
+
+                                                    st.info("✅ Recommended Adjustments for Above Target Scenarios:")
+                                                    for action in actions_above:
+                                                        st.write(f"- {action}")
+                                                                                                                                                        
                                         with forecasting_tab:
                                             graph_space_col, graph_select_col = st.columns([4,2], gap = "medium")
                                             
@@ -1043,10 +1138,10 @@ if st.session_state['authentication_status']:
                                                                                                                 ['meal Hours', 
                                                                                                                 'break Hours', 
                                                                                                                 'non-fb-training Hours']].sum(axis = 1)
-                                                util_noninference_df['Target Billable Hours'] = util_noninference_df['Required FTE'] * (settings['CityWorkHours'][city]['client'] * 5) * (1-settings['simulator']['OOO_Target']) * 0.851
-                                                util_noninference_df['Target Productive Hours'] = util_noninference_df['Target Billable Hours'] * 0.851
+                                                util_noninference_df['Target Billable Hours'] = util_noninference_df['Required FTE'] * (settings['CityWorkHours'][city]['client'] * 5) * (1-settings['simulator']['Targets']['OOO']) * settings['simulator']['Targets']['Utilization']
+                                                util_noninference_df['Target Productive Hours'] = util_noninference_df['Target Billable Hours'] * settings['simulator']['Targets']['Utilization']
                                                 util_noninference_df['Internal Utilization %'] = 100 * util_noninference_df['Productive Hours']/util_noninference_df['Billable Hours']
-                                                util_noninference_df['Client Utilization %'] = 100 * util_noninference_df['Productive Hours']/(util_noninference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-0.16))
+                                                util_noninference_df['Client Utilization %'] = 100 * util_noninference_df['Productive Hours']/(util_noninference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-settings['simulator']['Targets']['OOO']))
                                                 util_noninference_df['WIO Shrinkage'] = 100 * ((util_noninference_df['Billable Hours'] - util_noninference_df['Productive Hours'])/(util_noninference_df['Billable Hours'])) 
                                                 util_noninference_df['OOO Shrinkage'] = 100 * (util_noninference_df['NonBillable Hours']/util_noninference_df['TotalLogHours'])
                                                 util_noninference_df['Excess FTE Coverage'] = 100 * ((util_noninference_df['Annual Leave Count'] + util_noninference_df['TOI Leave Count'])/(5 * (util_noninference_df['Excess FTE'])))
@@ -1064,10 +1159,10 @@ if st.session_state['authentication_status']:
                                                                                                             ['Meal Hours', 
                                                                                                             'Break Hours', 
                                                                                                             'Non-Meta Training Hours']].sum(axis = 1)
-                                                util_inference_df['Target Billable Hours'] = util_inference_df['Required FTE'] * (settings['CityWorkHours'][city]['client'] * 5) * (1-settings['simulator']['OOO_Target'])
-                                                util_inference_df['Target Productive Hours'] = util_inference_df['Target Billable Hours'] * 0.851
+                                                util_inference_df['Target Billable Hours'] = util_inference_df['Required FTE'] * (settings['CityWorkHours'][city]['client'] * 5) * (1-settings['simulator']['Targets']['OOO'])
+                                                util_inference_df['Target Productive Hours'] = util_inference_df['Target Billable Hours'] * settings['simulator']['Targets']['Utilization']
                                                 util_inference_df['Internal Utilization %'] = 100 * util_inference_df['Productive Hours']/util_inference_df['Billable Hours']
-                                                util_inference_df['Client Utilization %'] = 100 * util_inference_df['Productive Hours']/(util_inference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-0.16))
+                                                util_inference_df['Client Utilization %'] = 100 * util_inference_df['Productive Hours']/(util_inference_df['Required FTE'] * settings['CityWorkHours'][city]['client'] * 5 * (1-settings['simulator']['Targets']['OOO']))
                                                 util_inference_df['WIO Shrinkage'] = 100 * ((util_inference_df['Billable Hours'] - util_inference_df['Productive Hours'])/(util_inference_df['Billable Hours'])) 
                                                 util_inference_df['OOO Shrinkage'] = 100 * (util_inference_df['NonBillable Hours']/(util_inference_df['Billable Hours'] + util_inference_df['NonBillable Hours']))
                                                 util_inference_df['Excess FTE Coverage'] = 100 * ((util_inference_df['Annual Leave Count'] + util_inference_df['TOI Leave Count'] + util_inference_df['Absenteeism Count'])/(5 * (util_inference_df['Excess FTE'])))
@@ -1096,6 +1191,14 @@ if st.session_state['authentication_status']:
                                                                             y = list(util_noninference_df["Internal Utilization %"]) + list(util_inference_df['Internal Utilization %'])),
                                                                             secondary_y = True
                                                                 )
+                                                    
+                                                    fig.add_hline(name = "Internal Utilization Target",
+                                                                  y=settings['simulator']['Targets']['Utilization'] * 100, 
+                                                                  line_width=3, 
+                                                                  line_dash="dash", 
+                                                                  line_color="green",
+                                                                  secondary_y = True)
+
                                                     
                                                     fig.update_layout(legend=dict(
                                                                         orientation="h",
@@ -1145,6 +1248,13 @@ if st.session_state['authentication_status']:
                                                                             secondary_y = True
                                                                 )
                                                     
+                                                    fig.add_hline(name = "Client Utilization Target",
+                                                                  y=settings['simulator']['Targets']['Utilization_Client'] * 100, 
+                                                                  line_width=3, 
+                                                                  line_dash="dash", 
+                                                                  line_color="green",
+                                                                  secondary_y = True)
+                                                    
                                                     fig.update_layout(legend=dict(
                                                                         orientation="h",
                                                                         yanchor="bottom",
@@ -1190,6 +1300,13 @@ if st.session_state['authentication_status']:
                                                                             secondary_y = True
                                                                 )
                                                     
+                                                    fig.add_hline(name = "Client Utilization Target",
+                                                                  y=settings['simulator']['Targets']['Utilization_Client'] * 100, 
+                                                                  line_width=3, 
+                                                                  line_dash="dash", 
+                                                                  line_color="green",
+                                                                  secondary_y = True)
+                                                    
                                                     fig.update_layout(legend=dict(
                                                                         orientation="h",
                                                                         yanchor="bottom",
@@ -1234,6 +1351,13 @@ if st.session_state['authentication_status']:
                                                                             y = list(util_noninference_df["Client Utilization %"]) + list(util_inference_df['Client Utilization %'])),
                                                                             secondary_y = True
                                                                 )
+                                                    
+                                                    fig.add_hline(name = "Client Utilization Target",
+                                                                  y=settings['simulator']['Targets']['Utilization_Client'] * 100, 
+                                                                  line_width=3, 
+                                                                  line_dash="dash", 
+                                                                  line_color="green",
+                                                                  secondary_y = True)
                                                     
                                                     fig.update_layout(legend=dict(
                                                                         orientation="h",
@@ -1288,6 +1412,13 @@ if st.session_state['authentication_status']:
                                                                         x=1
                                                                     ))
                                                     
+                                                    fig.add_hline(name = "OOO Shrinkage Target",
+                                                                  y=settings['simulator']['Targets']['OOO'] * 100, 
+                                                                  line_width=3, 
+                                                                  line_dash="dash", 
+                                                                  line_color="green",
+                                                                  secondary_y = True)
+                                                    
                                                     fig.update_yaxes(range=[0,50], secondary_y=True)
                                                     
                                                     fig.update_layout(
@@ -1325,6 +1456,13 @@ if st.session_state['authentication_status']:
                                                                             y = list(util_noninference_df["WIO Shrinkage"]) + list(util_inference_df['WIO Shrinkage'])),
                                                                             secondary_y = True
                                                                 )
+                                                    
+                                                    fig.add_hline(name = "WIO Shrinkage Target",
+                                                                  y=settings['simulator']['Targets']['WIO'] * 100, 
+                                                                  line_width=3, 
+                                                                  line_dash="dash", 
+                                                                  line_color="green",
+                                                                  secondary_y = True)
                                                     
                                                     fig.update_layout(legend=dict(
                                                                         orientation="h",
@@ -1484,7 +1622,7 @@ if st.session_state['authentication_status']:
 
             col1,col2,col3,col4 = st.columns(4)
             col1.metric("Utilization Rate (Internal)", f"{100*URI_1:.2f}%", help = "Actual Productive Hours Logged / Actual Billable Hours Logged")
-            col2.metric("Utilization Rate (Client)", f"{100*URC_1:.2f}%", help = f"Actual Productive Hours Logged / Target Billable Hours @ ({settings['simulator']['OOO_Target']*100}% OOO Shrinkage & {settings['simulator']['Utilization_Target']*100}% Utilization)")
+            col2.metric("Utilization Rate (Client)", f"{100*URC_1:.2f}%", help = f"Actual Productive Hours Logged / Target Billable Hours @ ({settings['simulator']['Targets']['OOO']*100}% OOO Shrinkage & {settings['simulator']['Targets']['Utilization']*100}% Utilization)")
             col3.metric("WIO Shrinkage", f"{100*WIO_1:.2f}%", help = "(Actual Billable Hours Logged - Actual Productive Hours Logged) / Actual Billable Hours Logged")
             col4.metric("OOO Shrinkage", f"{100*OOO_1:.2f}%", help = "Actual Nonbillable Hours Logged / Actual Total Hours Logged")
 

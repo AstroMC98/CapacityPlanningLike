@@ -49,6 +49,16 @@ def load_config(
     return dict(config_settings), dict(config_streamlit), dict(config_instructions), dict(config_readme)
 
 @st.cache_data(ttl=300)
+def load_target_config(target_config_filename : str):
+    config_file = toml.load(Path(get_project_root()) / f"config/{target_config_filename}")
+    return dict(config_file)
+
+@st.cache_data(ttl=300)
+def edit_target_config(new_config, target_config_filename):
+    with open(Path(get_project_root()) / f"config/{target_config_filename}", 'w') as f:
+        toml.dump(new_config, f)
+
+@st.cache_data(ttl=300)
 def load_image(image_name: str) -> Image:
     """Displays an image.
 

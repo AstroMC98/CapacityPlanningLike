@@ -3,6 +3,21 @@ app_intro = """
 This App allows you to prepare and plan workforce capacity using a variety of tools such as forecasting.
 """
 
+# """
+# This app allows you to train, evaluate and optimize a Prophet model in just a few clicks.
+# All you have to do is to upload a time series dataset, and follow the guidelines in the sidebar to:
+# * __Prepare data__: Filter, aggregate, resample and/or clean your dataset.
+# * __Choose model parameters__: Default parameters are available but you can tune them.
+# Look at the tooltips to understand how each parameter is impacting forecasts.
+# * __Select evaluation method__: Define the evaluation process, the metrics and the granularity to
+# assess your model performance.
+# * __Make a forecast__: Make a forecast on future dates that are not included in your dataset,
+# with the model previously trained. \n
+
+
+# Once you are satisfied, click on "save experiment" to download all plots and data locally.
+# """
+
 [tooltips]
 launch_forecast = """
 Check to launch forecast. A new forecast will be made each time some parameter is changed in the sidebar.

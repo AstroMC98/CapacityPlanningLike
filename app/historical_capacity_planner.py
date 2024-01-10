@@ -32,12 +32,12 @@ class HistoricalCapPlan:
         self.meeting = self.ActivityLog.get("team_meeting Hours", 0)
         self.wellness = self.ActivityLog.get("wellness_support Hours", 0)
         self.fbtraining = self.ActivityLog.get("fb_training Hours", 0)
-        self.nonfbtraining = self.ActivityLog.get("non-fb-training Hours", 0)
         
     def nonbillable_activity_breakdown(self):
         self.meal = self.ActivityLog.get("meal Hours",0)
         self.breaks = self.ActivityLog.get("break Hours", 0)
         self.leaves = (self.AnnualLeaveAllocation + self.TOILeaveAllocation) * self.config['CityWorkHours'][self.City]['internal']
+        self.nonfbtraining = self.ActivityLog.get("non-fb-training Hours", 0)
         
     def aggregated_activity_breakdown(self):
         self.Productive = sum([getattr(self, x, 0) for x in self.config['simulator']['activityTypes']['productive']])
@@ -47,7 +47,7 @@ class HistoricalCapPlan:
         
     def KPI_calculation(self):
         self.TotalHours = self.Billable + self.Nonbillable
-        self.RequiredBillableHours = (self.TargetCount * (1-self.config['simulator']['OOO_Target'])) * (self.config['CityWorkHours'][self.City]['client'] * 5) * (.851)
+        self.RequiredBillableHours = (self.TargetCount * (1-self.config['simulator']['Targets']['OOO'])) * (self.config['CityWorkHours'][self.City]['client'] * 5) * (self.config['simulator']['Targets']['Utilization'])
         
         self.WIO = (self.Billable - self.Productive)/(self.Billable)
         self.OOO = self.Nonbillable/self.TotalHours

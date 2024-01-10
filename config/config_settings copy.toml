@@ -91,7 +91,6 @@ Utilization_Target = 0.851
 OOO = 0.16
 Utilization = 0.851
 WIO = 0.149
-Utilization_Client = 0.9
 
 [simulator.activityTypes]
 productive = ['available']

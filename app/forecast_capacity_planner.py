@@ -45,7 +45,7 @@ class ForecastCapPlan:
         self.meal = self.nonbillable_data.get("Meal Hours",0)
         self.breaks = self.nonbillable_data.get("Break Hours", 0)
         self.leaves = self.nonbillable_data.get("Leave Hours",0) + self.nonbillable_data.get("Planned Absenteeism Hours",0)
-        self.nonfbtraining = self.nonbillable_data.get("Non-Meta Training", 0)
+        self.nonfbtraining = self.nonbillable_data.get("Non-Meta Training Hours", 0)
         
     def aggregated_activity_breakdown(self):
         self.Productive = sum([getattr(self, x, 0) for x in self.config['simulator']['activityTypes']['productive']])
@@ -54,7 +54,7 @@ class ForecastCapPlan:
     
     def KPI_calculation(self):
         self.TotalHours = self.Billable + self.Nonbillable
-        self.RequiredBillableHours = (self.TargetCount * (1-self.config['simulator']['OOO_Target'])) * (self.config['CityWorkHours'][self.City]['client'] * 5) * (.851)
+        self.RequiredBillableHours = (self.TargetCount * (1-self.config['simulator']['Targets']['OOO'])) * (self.config['CityWorkHours'][self.City]['client'] * 5)
         
         self.WIO = (self.Billable - self.Productive)/(self.Billable)
         self.OOO = self.Nonbillable/self.TotalHours
